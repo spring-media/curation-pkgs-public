@@ -1,2 +1,5 @@
 # curation-pkgs-public
-Public packages of team autocuration
+
+Contains public packages of team auto-curation.
+
+**WARNING: This repo is public, only for non-critical code.**
