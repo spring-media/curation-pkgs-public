@@ -119,6 +119,9 @@ func TestCloudWatchMetricSender_BatchFrequency(t *testing.T) {
 		return err
 	})
 	assert.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	assert.Equal(t, 1, len(resp.MetricDataResults))
 	assert.Equal(t, val, *resp.MetricDataResults[0].Values[0])
 }
@@ -135,9 +138,8 @@ func retry(delay time.Duration, numRetries int, f func() error) error {
 }
 
 func getMetricValues(client cloudwatchiface.CloudWatchAPI, namespace, metricName string) (*cloudwatch.GetMetricDataOutput, error) {
-	now := time.Now()
 	resp, err := client.GetMetricData(&cloudwatch.GetMetricDataInput{
-		EndTime:       aws.Time(now),
+		EndTime:       aws.Time(now.Add(1 * time.Minute)),
 		LabelOptions:  nil,
 		MaxDatapoints: nil,
 		MetricDataQueries: []*cloudwatch.MetricDataQuery{
@@ -149,7 +151,7 @@ func getMetricValues(client cloudwatchiface.CloudWatchAPI, namespace, metricName
 				ReturnData: aws.Bool(true),
 			},
 		},
-		StartTime: aws.Time(now.Add(-60 * time.Second)),
+		StartTime: aws.Time(now),
 	})
 
 	return resp, err
