@@ -1,0 +1,23 @@
+name: Bump version
+on:
+  workflow_dispatch:
+    inputs: { }
+  push:
+    branches:
+      - main
+    paths:
+      - 'pkg/cloudwatchmertrics/**'
+      - '!**/*.md'
+      - '!.github/**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Bump version and push tag
+        uses: hennejg/github-tag-action@v4.3.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag_prefix: 'pkg/cloudwatchmertrics/v'
+          release_branches: 'main'
