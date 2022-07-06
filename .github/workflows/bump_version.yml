@@ -12,20 +12,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
-      matrix:
-        include:
-          - prefix: pkg/cloudwatchmetrics/
-          - prefix: pkg/csvexport/
-          - prefix: ''
-
     steps:
       - uses: actions/checkout@master
 
-      - name: '${{ matrix.prefix }} Bump version and push tag'
+      - name: Bump version and push tag
         uses: hennejg/github-tag-action@v4.3.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag_prefix: '${{ matrix.prefix }}v'
+          tag_prefix: 'v'
           release_branches: 'main'
