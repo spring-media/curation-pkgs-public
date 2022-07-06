@@ -1,4 +1,4 @@
-module cloudwatchmetrics
+module github.com/spring-media/curation-pkgs-public/pkg/cloudwatchmetrics
 
 go 1.18
 
