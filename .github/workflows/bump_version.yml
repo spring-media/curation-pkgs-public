@@ -21,3 +21,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag_prefix: 'v'
           release_branches: 'main'
+
+      - name: Bump version and push tag
+        uses: hennejg/github-tag-action@v4.3.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag_prefix: 'pkg/cloudwatchmetrics/v'
+          release_branches: 'main'
