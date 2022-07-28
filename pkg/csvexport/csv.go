@@ -179,19 +179,20 @@ func (db DynoStorage) Scan(ctx context.Context, opt ScanOption, startKey map[str
 
 func GZIPData(data []byte) ([]byte, error) {
 	var b bytes.Buffer
+
 	gz := gzip.NewWriter(&b)
 
 	_, err := gz.Write(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to gz.Write: %w", err)
 	}
 
 	if err = gz.Flush(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to gz.Flush: %w", err)
 	}
 
 	if err = gz.Close(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to gz.Close: %w", err)
 	}
 
 	return b.Bytes(), nil
@@ -204,7 +205,7 @@ func UploadToS3(b []byte, client s3iface.S3API, bucket, path, fname string) erro
 		Key:    aws.String(path + fname),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to PutObject %s to S3: %w", fname, err)
 	}
 
 	return nil
