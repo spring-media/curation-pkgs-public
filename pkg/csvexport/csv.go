@@ -37,6 +37,8 @@ type Columns []Column
 
 type Column struct {
 	Name string
+	// If TargetName is set, Name gets renamed to TargetName in header
+	TargetName string
 	// If OverwriteValue is set to true, all values of the column are set to OverwriteWithValue.
 	OverwriteValue     bool
 	OverwriteWithValue interface{}
@@ -66,6 +68,7 @@ func DynamoToCSV(db Storage, ctx context.Context, scanOpt ScanOption, opts ...Op
 	var csvExp CSVExporter
 
 	var keyOrder []string
+	var header []string
 
 	for _, opt := range opts {
 		opt(&csvExp)
@@ -83,6 +86,14 @@ func DynamoToCSV(db Storage, ctx context.Context, scanOpt ScanOption, opts ...Op
 			if count == 0 {
 				for _, v := range csvExp.cols {
 					keyOrder = append(keyOrder, v.Name)
+
+					headerName := v.Name
+
+					if v.TargetName != "" {
+						headerName = v.TargetName
+					}
+
+					header = append(header, headerName)
 				}
 
 				if len(keyOrder) == 0 {
@@ -91,9 +102,11 @@ func DynamoToCSV(db Storage, ctx context.Context, scanOpt ScanOption, opts ...Op
 					}
 
 					sort.Strings(keyOrder)
+
+					header = keyOrder
 				}
 
-				_ = w.Write(keyOrder)
+				_ = w.Write(header)
 			}
 
 			record := make([]string, 0, len(keyOrder))
