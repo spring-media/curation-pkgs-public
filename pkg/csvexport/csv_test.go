@@ -2,6 +2,7 @@ package csvexport_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -125,6 +126,51 @@ func TestDynamoToCSVWithColsTargetName(t *testing.T) {
 	expectedCSV := `ArticleLastUpdated,PerformanceUpdatedLast
 2022-04-27T08:36:48.386Z,2022-04-27T13:10:30Z
 2022-04-28T08:36:48.386Z,2022-04-28T13:10:30Z
+`
+	assert.Equal(t, expectedCSV, string(b))
+}
+
+func TestDynamoToCSVWithColsValueFunc(t *testing.T) {
+	t.Parallel()
+	db := mockScan{resp: dynamoMockResp}
+
+	valueFn := func(val interface{}) (string, error) {
+		v, ok := val.(string)
+		if !ok {
+			return "", fmt.Errorf("failed to cast to string")
+		}
+
+		if v == "Meldungen1" {
+			return "Meldungen123", nil
+		}
+
+		return v, nil
+	}
+
+	valueFnNew := func(val interface{}) (string, error) {
+		v, ok := val.(string)
+		if !ok {
+			return "", fmt.Errorf("failed to cast to string")
+		}
+
+		if v == "Meldungen2" {
+			return "Meldungen999", nil
+		}
+
+		return v, nil
+	}
+	cols := csvexport.Columns{
+		csvexport.Column{Name: "ArticleLastUpdated"},
+		csvexport.Column{Name: "Block", ValueFunc: valueFn},
+		csvexport.Column{Name: "NewBlock", ValueFunc: valueFnNew, ValueFuncCol: "Block"},
+	}
+	b, err := csvexport.DynamoToCSV(db, context.Background(), csvexport.ScanOption{}, csvexport.WithColumns(cols))
+
+	assert.Nil(t, err)
+
+	expectedCSV := `ArticleLastUpdated,Block,NewBlock
+2022-04-27T08:36:48.386Z,Meldungen123,Meldungen1
+2022-04-28T08:36:48.386Z,Meldungen2,Meldungen999
 `
 	assert.Equal(t, expectedCSV, string(b))
 }
