@@ -110,3 +110,21 @@ func TestDynamoToCSVWithCols(t *testing.T) {
 `
 	assert.Equal(t, expectedCSV, string(b))
 }
+
+func TestDynamoToCSVWithColsTargetName(t *testing.T) {
+	t.Parallel()
+	db := mockScan{resp: dynamoMockResp}
+	cols := csvexport.Columns{
+		csvexport.Column{Name: "ArticleLastUpdated"},
+		csvexport.Column{Name: "PerformanceLastUpdated", TargetName: "PerformanceUpdatedLast"},
+	}
+	b, err := csvexport.DynamoToCSV(db, context.Background(), csvexport.ScanOption{}, csvexport.WithColumns(cols))
+
+	assert.Nil(t, err)
+
+	expectedCSV := `ArticleLastUpdated,PerformanceUpdatedLast
+2022-04-27T08:36:48.386Z,2022-04-27T13:10:30Z
+2022-04-28T08:36:48.386Z,2022-04-28T13:10:30Z
+`
+	assert.Equal(t, expectedCSV, string(b))
+}
