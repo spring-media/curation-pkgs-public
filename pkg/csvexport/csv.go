@@ -35,6 +35,22 @@ type ScanOption struct {
 
 type Columns []Column
 
+func (cols Columns) ValueFunc(colName string) (ValueFunc, string, bool) {
+	for i, c := range cols {
+		if c.Name != colName {
+			continue
+		}
+
+		if cols[i].ValueFunc != nil {
+			return cols[i].ValueFunc, cols[i].ValueFuncCol, true
+		}
+
+		return nil, "", false
+	}
+
+	return nil, "", false
+}
+
 type Column struct {
 	Name string
 	// If TargetName is set, Name gets renamed to TargetName in header
@@ -42,7 +58,12 @@ type Column struct {
 	// If OverwriteValue is set to true, all values of the column are set to OverwriteWithValue.
 	OverwriteValue     bool
 	OverwriteWithValue interface{}
+	// Function to process value in col and use that as result
+	ValueFunc    ValueFunc
+	ValueFuncCol string
 }
+
+type ValueFunc func(v interface{}) (string, error)
 
 type CSVExporter struct {
 	cols Columns
@@ -96,7 +117,7 @@ func DynamoToCSV(db Storage, ctx context.Context, scanOpt ScanOption, opts ...Op
 					header = append(header, headerName)
 				}
 
-				if len(keyOrder) == 0 {
+				if csvExp.cols == nil {
 					for k := range attr {
 						keyOrder = append(keyOrder, k)
 					}
@@ -117,6 +138,21 @@ func DynamoToCSV(db Storage, ctx context.Context, scanOpt ScanOption, opts ...Op
 				// Empty Value of column?
 				if len(csvExp.cols) > 0 && csvExp.cols[i].OverwriteValue {
 					value = csvExp.cols[i].OverwriteWithValue
+				}
+
+				// Custom function?
+				valueFn, valueFnCol, ok := csvExp.cols.ValueFunc(k)
+
+				if ok {
+					if valueFnCol != "" {
+						value = attr[valueFnCol]
+					}
+					newVal, err := valueFn(value)
+					if err != nil {
+						return nil, fmt.Errorf("failed to process custom valueFunction on column %s: %w", valueFnCol, err)
+					}
+					record = append(record, newVal)
+					continue
 				}
 
 				switch val := value.(type) {
