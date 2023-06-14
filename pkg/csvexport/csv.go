@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -111,7 +112,7 @@ func DynamoToCSV(db Storage, ctx context.Context, scanOpt ScanOption, opts ...Op
 					// protect exponential notation layout
 					record = append(record, strconv.FormatFloat(val, 'f', -1, 64))
 				case string:
-					record = append(record, val)
+					record = append(record, removeNewLines(val))
 				default:
 					js, err := json.Marshal(value)
 					if err != nil {
@@ -209,4 +210,8 @@ func UploadToS3(b []byte, client s3iface.S3API, bucket, path, fname string) erro
 	}
 
 	return nil
+}
+
+func removeNewLines(s string) string {
+	return strings.ReplaceAll(s, "\n", " ")
 }
