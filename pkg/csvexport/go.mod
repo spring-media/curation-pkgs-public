@@ -1,9 +1,9 @@
 module github.com/spring-media/curation-pkgs-public/pkg/csvexport
 
-go 1.18
+go 1.22
 
 require (
-	github.com/aws/aws-sdk-go v1.44.7
+	github.com/aws/aws-sdk-go v1.50.32
 	github.com/stretchr/testify v1.7.1
 )
 
