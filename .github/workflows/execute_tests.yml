@@ -1,0 +1,44 @@
+name: PR checks
+
+permissions:
+  id-token: write # required to use OIDC authentication
+  contents: read # required to check out the code from the repo
+
+on:
+  workflow_dispatch:
+    inputs: {}
+  pull_request:
+
+jobs:
+  check-go:
+    name: Lint & execute go tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir: ["csvexport"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22.x"
+      - name: Install dependencies
+        run: |
+          go version
+          go install golang.org/x/lint/golint@latest
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          only-new-issues: true
+          args: --issues-exit-code=0 --timeout 300s
+          working-directory: "./pkg/${{ matrix.dir }}"
+      - name: Check
+        run: |
+          go vet ./...
+          golint ./...
+        working-directory: "./pkg/${{ matrix.dir }}"
+      - name: Test
+        run: |
+          go test ./...
+        working-directory: "./pkg/${{ matrix.dir }}"
