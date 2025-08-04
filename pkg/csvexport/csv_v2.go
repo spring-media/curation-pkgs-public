@@ -17,14 +17,25 @@ import (
 )
 
 type StorageV2 interface {
-	Scan(ctx context.Context, opt ScanOption, startKey map[string]types.AttributeValue) ([]map[string]interface{}, map[string]types.AttributeValue, error)
+	Scan(ctx context.Context, params *dynamodb.ScanInput, optFns ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error)
 }
 
-type DynoStorageV2 struct {
-	DDB *dynamodb.Client
+type dynoStorageV2 struct {
+	StorageV2
 }
 
-func DynamoToCSVV2(db StorageV2, ctx context.Context, scanOpt ScanOption, opts ...Option) ([]byte, error) {
+type ScanOptionV2 struct {
+	TableName            string
+	FilterExpression     string
+	ExpressionAttrNames  map[string]string
+	ExpressionAttrValues map[string]types.AttributeValue
+}
+
+func DynamoToCSVV2(db StorageV2, ctx context.Context, scanOpt ScanOptionV2, opts ...Option) ([]byte, error) {
+	dynoStorageV2 := &dynoStorageV2{
+		StorageV2: db,
+	}
+
 	var b bytes.Buffer
 
 	w := csv.NewWriter(&b)
@@ -45,7 +56,7 @@ func DynamoToCSVV2(db StorageV2, ctx context.Context, scanOpt ScanOption, opts .
 	count := 0
 
 	for {
-		resp, sk, err := db.Scan(ctx, scanOpt, startKey)
+		resp, sk, err := dynoStorageV2.scan(ctx, scanOpt, startKey)
 		if err != nil {
 			return nil, fmt.Errorf("scan failed: %w", err)
 		}
@@ -133,33 +144,18 @@ func DynamoToCSVV2(db StorageV2, ctx context.Context, scanOpt ScanOption, opts .
 	return b.Bytes(), nil
 }
 
-func (db DynoStorageV2) Scan(ctx context.Context, opt ScanOption, startKey map[string]types.AttributeValue) ([]map[string]interface{}, map[string]types.AttributeValue, error) {
-	var expressionAttributeValues map[string]types.AttributeValue
-	if opt.ExpressionAttrValues != "" {
-		if err := json.Unmarshal([]byte(opt.ExpressionAttrValues), &expressionAttributeValues); err != nil {
-			return nil, nil, fmt.Errorf("expression attribute values invalid: %w", err)
-		}
-	}
-
-	var expressionAttributeNames map[string]string
-	if opt.ExpressionAttrNames != "" {
-		expressionAttributeNames = make(map[string]string)
-		if err := json.Unmarshal([]byte(opt.ExpressionAttrNames), &expressionAttributeNames); err != nil {
-			return nil, nil, fmt.Errorf("expression attribute names invalid: %w", err)
-		}
-	}
-
+func (db *dynoStorageV2) scan(ctx context.Context, opt ScanOptionV2, startKey map[string]types.AttributeValue) ([]map[string]interface{}, map[string]types.AttributeValue, error) {
 	var filterExpression *string
 	if opt.FilterExpression != "" {
 		filterExpression = aws.String(opt.FilterExpression)
 	}
 
-	out, err := db.DDB.Scan(ctx, &dynamodb.ScanInput{
+	out, err := db.Scan(ctx, &dynamodb.ScanInput{
 		TableName:                 aws.String(opt.TableName),
 		ExclusiveStartKey:         startKey,
-		ExpressionAttributeNames:  expressionAttributeNames,
+		ExpressionAttributeNames:  opt.ExpressionAttrNames,
+		ExpressionAttributeValues: opt.ExpressionAttrValues,
 		FilterExpression:          filterExpression,
-		ExpressionAttributeValues: expressionAttributeValues,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("db.Scan: %w", err)

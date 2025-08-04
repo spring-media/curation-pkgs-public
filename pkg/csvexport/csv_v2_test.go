@@ -3,11 +3,16 @@ package csvexport_test
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go/aws"
 
 	"github.com/spring-media/curation-pkgs-public/pkg/csvexport"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var dynamoMockRespV2 = []map[string]interface{}{
@@ -65,19 +70,36 @@ var dynamoMockRespV2 = []map[string]interface{}{
 	},
 }
 
-type mockScanV2 struct {
-	resp []map[string]interface{}
+func newMockScanV2(t *testing.T, resp []map[string]interface{}) *mockScanV2 {
+	t.Helper()
+	var items []map[string]types.AttributeValue
+	for _, item := range resp {
+		itemMap, err := attributevalue.MarshalMap(item)
+		require.NoError(t, err)
+		items = append(items, itemMap)
+	}
+	return &mockScanV2{
+		resp: dynamodb.ScanOutput{
+			Items: items,
+		},
+	}
 }
 
-func (d mockScanV2) Scan(ctx context.Context, opt csvexport.ScanOption, startKey map[string]types.AttributeValue) ([]map[string]interface{}, map[string]types.AttributeValue, error) {
-	return d.resp, map[string]types.AttributeValue{}, nil
+type mockScanV2 struct {
+	requests []dynamodb.ScanInput
+	resp     dynamodb.ScanOutput
+}
+
+func (d *mockScanV2) Scan(ctx context.Context, params *dynamodb.ScanInput, optFns ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error) {
+	d.requests = append(d.requests, *params)
+	return &d.resp, nil
 }
 
 func TestDynamoToCSVV2(t *testing.T) {
 	t.Parallel()
-	option := csvexport.ScanOption{}
+	option := csvexport.ScanOptionV2{}
 
-	db := mockScanV2{resp: dynamoMockRespV2}
+	db := newMockScanV2(t, dynamoMockRespV2)
 	b, err := csvexport.DynamoToCSVV2(db, context.Background(), option)
 
 	assert.Nil(t, err)
@@ -91,7 +113,7 @@ func TestDynamoToCSVV2(t *testing.T) {
 
 func TestDynamoToCSVWithColsV2(t *testing.T) {
 	t.Parallel()
-	db := mockScanV2{resp: dynamoMockRespV2}
+	db := newMockScanV2(t, dynamoMockRespV2)
 	cols := csvexport.Columns{
 		csvexport.Column{Name: "ArticleLastUpdated"},
 		csvexport.Column{Name: "Block", OverwriteValue: true, OverwriteWithValue: ""},
@@ -101,7 +123,7 @@ func TestDynamoToCSVWithColsV2(t *testing.T) {
 		csvexport.Column{Name: "IsSponsored", OverwriteValue: true, OverwriteWithValue: false},
 		csvexport.Column{Name: "PerformanceLastUpdated"},
 	}
-	b, err := csvexport.DynamoToCSVV2(db, context.Background(), csvexport.ScanOption{}, csvexport.WithColumns(cols))
+	b, err := csvexport.DynamoToCSVV2(db, context.Background(), csvexport.ScanOptionV2{}, csvexport.WithColumns(cols))
 
 	assert.Nil(t, err)
 
@@ -114,12 +136,12 @@ func TestDynamoToCSVWithColsV2(t *testing.T) {
 
 func TestDynamoToCSVWithColsTargetNameV2(t *testing.T) {
 	t.Parallel()
-	db := mockScanV2{resp: dynamoMockRespV2}
+	db := newMockScanV2(t, dynamoMockRespV2)
 	cols := csvexport.Columns{
 		csvexport.Column{Name: "ArticleLastUpdated"},
 		csvexport.Column{Name: "PerformanceLastUpdated", TargetName: "PerformanceUpdatedLast"},
 	}
-	b, err := csvexport.DynamoToCSVV2(db, context.Background(), csvexport.ScanOption{}, csvexport.WithColumns(cols))
+	b, err := csvexport.DynamoToCSVV2(db, context.Background(), csvexport.ScanOptionV2{}, csvexport.WithColumns(cols))
 
 	assert.Nil(t, err)
 
@@ -132,7 +154,7 @@ func TestDynamoToCSVWithColsTargetNameV2(t *testing.T) {
 
 func TestDynamoToCSVWithColsValueFuncV2(t *testing.T) {
 	t.Parallel()
-	db := mockScanV2{resp: dynamoMockRespV2}
+	db := newMockScanV2(t, dynamoMockRespV2)
 
 	valueFn := func(val interface{}) (string, error) {
 		v, ok := val.(string)
@@ -164,7 +186,7 @@ func TestDynamoToCSVWithColsValueFuncV2(t *testing.T) {
 		csvexport.Column{Name: "Block", ValueFunc: valueFn},
 		csvexport.Column{Name: "NewBlock", ValueFunc: valueFnNew, ValueFuncCol: "Block"},
 	}
-	b, err := csvexport.DynamoToCSVV2(db, context.Background(), csvexport.ScanOption{}, csvexport.WithColumns(cols))
+	b, err := csvexport.DynamoToCSVV2(db, context.Background(), csvexport.ScanOptionV2{}, csvexport.WithColumns(cols))
 
 	assert.Nil(t, err)
 
@@ -173,4 +195,32 @@ func TestDynamoToCSVWithColsValueFuncV2(t *testing.T) {
 2022-04-28T08:36:48.386Z,Meldungen2,Meldungen999
 `
 	assert.Equal(t, expectedCSV, string(b))
+}
+
+func TestScanOptions(t *testing.T) {
+	t.Parallel()
+	db := newMockScanV2(t, dynamoMockRespV2)
+	cols := csvexport.Columns{
+		csvexport.Column{Name: "ArticleLastUpdated"},
+	}
+	scanOpt := csvexport.ScanOptionV2{
+		TableName:        "test-table",
+		FilterExpression: "Block = :block",
+		ExpressionAttrValues: map[string]types.AttributeValue{
+			":block": &types.AttributeValueMemberS{Value: "testBlock"},
+		},
+		ExpressionAttrNames: map[string]string{"#block": "Block"},
+	}
+
+	_, err := csvexport.DynamoToCSVV2(db, context.Background(), scanOpt, csvexport.WithColumns(cols))
+	require.Nil(t, err)
+	require.Len(t, db.requests, 1)
+	assert.Equal(t, dynamodb.ScanInput{
+		TableName:        aws.String(scanOpt.TableName),
+		FilterExpression: aws.String(scanOpt.FilterExpression),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":block": &types.AttributeValueMemberS{Value: "testBlock"},
+		},
+		ExpressionAttributeNames: map[string]string{"#block": "Block"},
+	}, db.requests[0])
 }
