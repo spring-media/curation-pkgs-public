@@ -27,7 +27,7 @@ func TestSLog(t *testing.T) {
 
 	l.Sync()
 
-	rs := (<-client.debugChan).(s3.PutObjectInput)
+	rs := (<-client.debugChan).(*s3.PutObjectInput)
 	// uncompress gzip body
 	reader, err := gzip.NewReader(rs.Body)
 	assert.Nil(t, err)

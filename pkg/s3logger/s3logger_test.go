@@ -19,7 +19,7 @@ func (c s3MockClient) HeadBucket(context.Context, *s3.HeadBucketInput, ...func(*
 	return nil, nil
 }
 
-func (c s3MockClient) PutObject(_ context.Context, params s3.PutObjectInput, _ ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+func (c s3MockClient) PutObject(_ context.Context, params *s3.PutObjectInput, _ ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
 	if c.debugChan != nil {
 		c.debugChan <- params
 	}
@@ -69,7 +69,7 @@ func TestSyncAfter50M(t *testing.T) {
 	for i := 0; uint(l.buffer.Len()) < l.maxFileSize; i++ {
 		l.Write(messageBytes)
 	}
-	rs := (<-client.debugChan).(s3.PutObjectInput)
+	rs := (<-client.debugChan).(*s3.PutObjectInput)
 	data, err := io.ReadAll(rs.Body)
 	assert.Nil(t, err)
 	assert.GreaterOrEqual(t, uint(len(data)), l.maxFileSize)

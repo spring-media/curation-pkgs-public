@@ -15,7 +15,7 @@ import (
 )
 
 type S3Client interface {
-	PutObject(ctx context.Context, params s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 	HeadBucket(ctx context.Context, params *s3.HeadBucketInput, optFns ...func(*s3.Options)) (*s3.HeadBucketOutput, error)
 }
 
@@ -44,7 +44,7 @@ func (l *S3Logger) Sync() {
 	}
 	now := time.Now()
 	ctx := context.Background()
-	_, err := l.service.PutObject(ctx, s3.PutObjectInput{
+	_, err := l.service.PutObject(ctx, &s3.PutObjectInput{
 		Body:   bytes.NewReader(b.Bytes()),
 		Bucket: aws.String(l.bucket),
 		Key:    aws.String(fmt.Sprintf("%s%s/%s-%d.gz", l.prefix, now.Format("2006/01/02/15"), l.fileID, now.UnixMicro())),
