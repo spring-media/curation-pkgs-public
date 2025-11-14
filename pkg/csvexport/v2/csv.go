@@ -2,6 +2,7 @@ package v2
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -240,6 +241,27 @@ func UploadToS3V2(ctx context.Context, b []byte, client S3PutClient, bucket, pat
 	}
 
 	return nil
+}
+
+func GZIPData(data []byte) ([]byte, error) {
+	var b bytes.Buffer
+
+	gz := gzip.NewWriter(&b)
+
+	_, err := gz.Write(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to gz.Write: %w", err)
+	}
+
+	if err = gz.Flush(); err != nil {
+		return nil, fmt.Errorf("failed to gz.Flush: %w", err)
+	}
+
+	if err = gz.Close(); err != nil {
+		return nil, fmt.Errorf("failed to gz.Close: %w", err)
+	}
+
+	return b.Bytes(), nil
 }
 
 func removeNewLines(s string) string {

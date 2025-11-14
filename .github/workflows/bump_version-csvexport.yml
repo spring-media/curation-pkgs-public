@@ -8,7 +8,7 @@ on:
     branches:
       - main
     paths:
-      - 'pkg/csvexport/**'
+      - 'pkg/csvexport/v2/**'
       - '!**/*.md'
       - '!.github/**'
 jobs:
@@ -21,5 +21,5 @@ jobs:
         uses: hennejg/github-tag-action@v4.3.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag_prefix: 'pkg/csvexport/v'
+          tag_prefix: 'pkg/csvexport/v2/v'
           release_branches: 'main'
