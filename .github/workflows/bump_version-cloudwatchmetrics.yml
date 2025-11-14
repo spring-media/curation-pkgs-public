@@ -1,4 +1,6 @@
 name: '[cloudwatchmetrics] Bump version'
+permissions:
+  contents: write
 on:
   workflow_dispatch:
     inputs: { }
