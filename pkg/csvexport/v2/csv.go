@@ -189,9 +189,11 @@ func DynamoToCSV(db Storage, ctx context.Context, scanOpt ScanOption, opts ...Op
 func (db DynoStorage) Scan(ctx context.Context, opt ScanOption, startKey map[string]types.AttributeValue) ([]map[string]interface{}, map[string]types.AttributeValue, error) {
 	var expressionAttributeValues map[string]types.AttributeValue
 	if opt.ExpressionAttrValues != "" {
-		if err := json.Unmarshal([]byte(opt.ExpressionAttrValues), &expressionAttributeValues); err != nil {
+		res, err := attributevalue.UnmarshalMapJSON([]byte(opt.ExpressionAttrValues))
+		if err != nil {
 			return nil, nil, fmt.Errorf("expression attribute values invalid: %w", err)
 		}
+		expressionAttributeValues = res
 	}
 
 	var expressionAttributeNames map[string]string
