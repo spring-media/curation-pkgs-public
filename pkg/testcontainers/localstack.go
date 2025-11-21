@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -31,6 +32,7 @@ const (
 	ServiceCloudWatchLogs Service = "logs"
 	ServiceDynamoDB       Service = "dynamodb"
 	ServiceSSM            Service = "ssm"
+	ServiceSQS            Service = "sqs"
 )
 
 type LocalStack struct {
@@ -86,6 +88,13 @@ func (ts *LocalStack) GetSSMClient() *ssm.Client {
 		ts.tb.Fatalf("SSM service is not included in the Localstack instance")
 	}
 	return ssm.NewFromConfig(ts.cfg)
+}
+
+func (ts *LocalStack) GetSQSClient() *sqs.Client {
+	if !slices.Contains(ts.services, ServiceSQS) {
+		ts.tb.Fatalf("SQS service is not included in the Localstack instance")
+	}
+	return sqs.NewFromConfig(ts.cfg)
 }
 
 func (ts *LocalStack) GetConfig() aws.Config {
