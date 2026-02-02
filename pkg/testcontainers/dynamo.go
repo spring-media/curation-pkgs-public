@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/ory/dockertest/v3"
 )
 
@@ -32,30 +33,24 @@ func StartDynamo(tb testing.TB) *dynamodb.Client {
 	addCleanup(tb, cleanUp)
 
 	port := res.GetPort("8000/tcp")
-	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		if service == dynamodb.ServiceID {
-			return aws.Endpoint{
-				URL:               fmt.Sprintf("http://localhost:%s", port),
-				HostnameImmutable: true,
-				PartitionID:       "aws",
-				SigningRegion:     "eu-central-1",
-			}, nil
-		}
+	endpoint := fmt.Sprintf("http://localhost:%s", port)
 
-		return aws.Endpoint{}, fmt.Errorf("unknown endpoint requested")
-	})
-	cfg := aws.NewConfig()
-	cfg.EndpointResolverWithOptions = customResolver
-
-	dyndb := dynamodb.NewFromConfig(*cfg, func(options *dynamodb.Options) {
-		options.Credentials = aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithBaseEndpoint(endpoint),
+		config.WithRegion("eu-central-1"),
+		config.WithCredentialsProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 			return aws.Credentials{
 				AccessKeyID:     "id",
 				SecretAccessKey: "secret",
 				CanExpire:       false,
 			}, nil
-		})
-	})
+		})),
+	)
+	if err != nil {
+		tb.Fatalf("Could not create AWS config: %s", err)
+	}
+
+	dyndb := dynamodb.NewFromConfig(cfg)
 
 	err = pool.Retry(func() error {
 		_, err := dyndb.ListTables(context.Background(), &dynamodb.ListTablesInput{})
@@ -72,4 +67,51 @@ func StartDynamo(tb testing.TB) *dynamodb.Client {
 	}
 
 	return dyndb
+}
+
+func InitTable(t testing.TB, name string, client *dynamodb.Client) func() {
+	t.Helper()
+
+	_, err := client.CreateTable(t.Context(), &dynamodb.CreateTableInput{
+		BillingMode: types.BillingModePayPerRequest,
+		AttributeDefinitions: []types.AttributeDefinition{
+			{
+				AttributeName: aws.String("id"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
+				AttributeName: aws.String("lastUpdated"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+		},
+		KeySchema: []types.KeySchemaElement{
+			{
+				AttributeName: aws.String("id"),
+				KeyType:       types.KeyTypeHash,
+			},
+			{
+				AttributeName: aws.String("lastUpdated"),
+				KeyType:       types.KeyTypeRange,
+			},
+		},
+		TableName: aws.String(name),
+	})
+	if err != nil {
+		t.Fatalf("could not initialize table: %s: %s", name, err)
+	}
+
+	return func() {
+		DeleteTable(t, client, name)
+	}
+}
+
+func DeleteTable(t testing.TB, client *dynamodb.Client, name string) {
+	t.Helper()
+
+	_, err := client.DeleteTable(context.Background(), &dynamodb.DeleteTableInput{
+		TableName: aws.String(name),
+	})
+	if err != nil {
+		t.Fatalf("could not delete table: %s: %s", name, err)
+	}
 }
