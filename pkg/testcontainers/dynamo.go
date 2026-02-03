@@ -69,7 +69,7 @@ func StartDynamo(tb testing.TB) *dynamodb.Client {
 	return dyndb
 }
 
-func InitTable(t testing.TB, name string, client *dynamodb.Client) func() {
+func InitTable(t testing.TB, client *dynamodb.Client, name string) func() {
 	t.Helper()
 
 	_, err := client.CreateTable(t.Context(), &dynamodb.CreateTableInput{
@@ -108,7 +108,7 @@ func InitTable(t testing.TB, name string, client *dynamodb.Client) func() {
 func DeleteTable(t testing.TB, client *dynamodb.Client, name string) {
 	t.Helper()
 
-	_, err := client.DeleteTable(context.Background(), &dynamodb.DeleteTableInput{
+	_, err := client.DeleteTable(t.Context(), &dynamodb.DeleteTableInput{
 		TableName: aws.String(name),
 	})
 	if err != nil {
