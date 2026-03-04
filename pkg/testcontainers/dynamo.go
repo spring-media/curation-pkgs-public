@@ -79,19 +79,11 @@ func InitTable(t testing.TB, client *dynamodb.Client, name string) func() {
 				AttributeName: aws.String("id"),
 				AttributeType: types.ScalarAttributeTypeS,
 			},
-			{
-				AttributeName: aws.String("lastUpdated"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
 				AttributeName: aws.String("id"),
 				KeyType:       types.KeyTypeHash,
-			},
-			{
-				AttributeName: aws.String("lastUpdated"),
-				KeyType:       types.KeyTypeRange,
 			},
 		},
 		TableName: aws.String(name),
