@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>spring-media/curation-github-actions-shared//renovate/autocuration"],
+  "enabledManagers": ["gomod"],
+  "additionalBranchPrefix": "{{parentDir}}-",
+  "gomod": {
+    "postUpdateOptions": ["gomodTidy"]
+  }
+}
