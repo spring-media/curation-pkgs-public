@@ -1,31 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":semanticCommits"
-  ],
-  "timezone": "Europe/Berlin",
-  "schedule": ["before 6am on Monday"],
-  "labels": ["dependencies"],
+  "extends": ["github>spring-media/curation-github-actions-shared//renovate/autocuration"],
   "enabledManagers": ["gomod"],
   "additionalBranchPrefix": "{{parentDir}}-",
   "gomod": {
     "postUpdateOptions": ["gomodTidy"]
-  },
-  "vulnerabilityAlerts": {
-    "enabled": true
-  },
-  "packageRules": [
-    {
-      "description": "Group minor and patch updates per package directory, so each PR only touches one package",
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "{{parentDir}} minor and patch dependencies"
-    },
-    {
-      "description": "Major updates handled individually, scoped per package directory",
-      "matchUpdateTypes": ["major"],
-      "groupName": null,
-      "automerge": false
-    }
-  ]
+  }
 }
