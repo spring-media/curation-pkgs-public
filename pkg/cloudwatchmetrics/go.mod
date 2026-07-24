@@ -2,6 +2,8 @@ module github.com/spring-media/curation-pkgs-public/pkg/cloudwatchmetrics
 
 go 1.22
 
+toolchain go1.26.5
+
 require (
 	github.com/aws/aws-sdk-go v1.50.32
 	github.com/stretchr/testify v1.8.1

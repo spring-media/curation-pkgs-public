@@ -2,23 +2,25 @@ module github.com/spring-media/curation-pkgs-public/pkg/s3logger
 
 go 1.24.4
 
+toolchain go1.26.5
+
 require (
-	github.com/aws/aws-sdk-go-v2 v1.38.3
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.3
+	github.com/aws/aws-sdk-go-v2 v1.43.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.8.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.6 // indirect
-	github.com/aws/smithy-go v1.23.0 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.14 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.32 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.24 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.31 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.32 // indirect
+	github.com/aws/smithy-go v1.27.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
